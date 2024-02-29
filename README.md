@@ -1,6 +1,10 @@
 # imagedeployment
 // TODO(user): Add simple overview of use/purpose
 
+## Proces
+make install
+make run
+
 ## Description
 // TODO(user): An in-depth paragraph about your project and overview of use
 
