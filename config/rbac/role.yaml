@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - mycustom.deployment.aas
+  resources:
+  - customdeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - mycustom.deployment.aas
+  resources:
+  - customdeployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - mycustom.deployment.aas
+  resources:
+  - customdeployments/status
+  verbs:
+  - get
+  - patch
+  - update

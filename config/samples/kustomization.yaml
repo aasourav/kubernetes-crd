@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- mycustom_alphav1_customdeployment.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

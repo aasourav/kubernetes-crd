@@ -1,0 +1,15 @@
+apiVersion: mycustom.deployment.aas/alphav1
+kind: CustomDeployment
+metadata:
+  labels:
+    app.kubernetes.io/name: customdeployment
+    app.kubernetes.io/instance: customdeployment-sample
+    app.kubernetes.io/part-of: imagedeployment
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: imagedeployment
+  name: agagagahjhhj
+spec:
+  image: "nginx"
+  port: 80
+  replicas: 3
+  # TODO(user): Add fields here
