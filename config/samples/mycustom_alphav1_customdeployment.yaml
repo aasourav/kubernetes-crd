@@ -1,5 +1,3 @@
-apiVersion: mycustom.deployment.aas/alphav1
-kind: CustomDeployment
 metadata:
   labels:
     app.kubernetes.io/name: customdeployment
@@ -12,4 +10,9 @@ spec:
   image: "nginx"
   port: 80
   replicas: 3
+  pickEnd: 23
+  pickEndMins: 40
+  pickStart: 22
+  pickStartMins: 40
+
   # TODO(user): Add fields here

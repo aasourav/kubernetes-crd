@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,8 +36,8 @@ import (
 
 // CustomDeploymentReconciler reconciles a CustomDeployment object
 type CustomDeploymentReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+        client.Client
+        Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=mycustom.deployment.aas,resources=customdeployments,verbs=get;list;watch;create;update;patch;delete
@@ -53,70 +54,85 @@ type CustomDeploymentReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.0/pkg/reconcile
 func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
-	appCr := &mycustomalphav1.CustomDeployment{}
+        log := log.FromContext(ctx)
+        appCr := &mycustomalphav1.CustomDeployment{}
 
-	err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, appCr)
-	if err != nil {
-		log.Info(fmt.Sprintf("faied to get %s/%s", appCr.Name, appCr.Namespace))
-		return ctrl.Result{}, err
-	}
+        err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, appCr)
+        if err != nil {
+                log.Info(fmt.Sprintf("faied to get %s/%s", appCr.Name, appCr.Namespace))
+                return ctrl.Result{}, err
+        }
 
-	podLabel := map[string]string{
-		"tata": "mata",
-	}
+        var replicas int32
+        currentTime := time.Now()
+        currentHour := currentTime.Hour() + 5
+        currentMin := currentTime.Minute()
 
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      appCr.Name,
-			Namespace: appCr.Namespace,
-			//Labels:    podLabel,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &appCr.Spec.Replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: podLabel,
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					// Name:      appCr.Name,
-					// Namespace: appCr.Namespace,
-					Labels: podLabel,
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "my-nginx",
-							Image: appCr.Spec.Image,
+        log.Info(fmt.Sprintf("\nP!! %v \n %v \n %v", appCr.Spec.PickHourStart, appCr.Spec.PickHourEnd, appCr.Spec.PickMinsEnd))
+        log.Info(fmt.Sprintf("\nP22 %v \n %v", currentHour, currentMin))
 
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "http",
-									Protocol:      corev1.ProtocolTCP,
-									ContainerPort: appCr.Spec.Port,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+        if currentHour >= int(appCr.Spec.PickHourStart) && currentMin >= int(appCr.Spec.PickMinsEnd) && currentHour <= int(appCr.Spec.PickHourEnd) {
+                replicas = 10
+        } else {
+                replicas = 2
+        }
 
-	er := r.Create(ctx, deployment)
+        podLabel := map[string]string{
+                "tata": "mata",
+        }
 
-	if er != nil {
-		log.Error(er, "Error during deployment")
-	}
+        deployment := &appsv1.Deployment{
+                ObjectMeta: metav1.ObjectMeta{
+                        Name:      appCr.Name,
+                        Namespace: appCr.Namespace,
+                        //Labels:    podLabel,
+                },
+                Spec: appsv1.DeploymentSpec{
+                        Replicas: &replicas,
+                        Selector: &metav1.LabelSelector{
+                                MatchLabels: podLabel,
+                        },
+                        Template: corev1.PodTemplateSpec{
+                                ObjectMeta: metav1.ObjectMeta{
+                                        // Name:      appCr.Name,
+                                        // Namespace: appCr.Namespace,
+                                        Labels: podLabel,
+                                },
+                                Spec: corev1.PodSpec{
+                                        Containers: []corev1.Container{
+                                                {
+                                                        Name:  "my-nginx",
+                                                        Image: appCr.Spec.Image,
 
-	// TODO(user): your logic here
+                                                        Ports: []corev1.ContainerPort{
+                                                                {
+                                                                        Name:          "http",
+                                                                        Protocol:      corev1.ProtocolTCP,
+                                                                        ContainerPort: appCr.Spec.Port,
+                                                                },
+                                                        },
+                                                },
+                                        },
+                                },
+                        },
+                },
+        }
 
-	return ctrl.Result{}, nil
+        er := r.Create(ctx, deployment)
+
+        if er != nil {
+                log.Error(er, "Error during deployment")
+        }
+
+        // TODO(user): your logic here
+
+        return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *CustomDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&mycustomalphav1.CustomDeployment{}).
-		Complete(r)
+        return ctrl.NewControllerManagedBy(mgr).
+                For(&mycustomalphav1.CustomDeployment{}).
+                Complete(r)
 }
+                      

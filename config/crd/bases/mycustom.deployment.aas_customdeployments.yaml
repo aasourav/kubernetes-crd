@@ -41,6 +41,12 @@ spec:
             properties:
               image:
                 type: string
+              pickEnd:
+                format: int32
+                type: integer
+              pickStart:
+                format: int32
+                type: integer
               port:
                 format: int32
                 type: integer
@@ -52,6 +58,8 @@ spec:
                 type: integer
             required:
             - image
+            - pickEnd
+            - pickStart
             - port
             - replicas
             type: object
