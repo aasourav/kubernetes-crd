@@ -69,7 +69,8 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
         currentMin := currentTime.Minute()
 
         log.Info(fmt.Sprintf("\nP!! %v \n %v \n %v", appCr.Spec.PickHourStart, appCr.Spec.PickHourEnd, appCr.Spec.PickMinsEnd))
-        log.Info(fmt.Sprintf("\nP22 %v \n %v", currentHour, currentMin))
+        log.Info(fmt.Sprintf("\nP22 %v \n %v \n %v\n", currentHour, currentMin,appCr.Status.IsFirstTime))
+        log.Info(fmt.Sprintf("\n======================== \nHERE WE GO\n====================\n %v",currentHour))
 
         if currentHour >= int(appCr.Spec.PickHourStart) && currentMin >= int(appCr.Spec.PickMinsEnd) && currentHour <= int(appCr.Spec.PickHourEnd) {
                 replicas = 10
@@ -118,15 +119,33 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
                 },
         }
 
-        er := r.Create(ctx, deployment)
 
-        if er != nil {
-                log.Error(er, "Error during deployment")
+        if appCr.Status.IsFirstTime {
+        // If it's not the first time, update the existing Deployment
+        err = r.Update(ctx, deployment)
+        if err != nil {
+            log.Error(err, "Failed to update Deployment")
+            return ctrl.Result{}, err
         }
+    } else {
+        // If it's the first time, create the Deployment
+        err = r.Create(ctx, deployment)
+        if err != nil {
+            log.Error(err, "Failed to create Deployment")
+            return ctrl.Result{}, err
+        }
+        // Update status to mark it's not the first time
+        appCr.Status.IsFirstTime = true
+        err = r.Status().Update(ctx, appCr)
+        if err != nil {
+            log.Error(err, "Failed to update CustomDeployment status")
+            return ctrl.Result{}, err
+        }
+    }
 
         // TODO(user): your logic here
 
-        return ctrl.Result{}, nil
+        return ctrl.Result{RequeueAfter: time.Duration(30 * time.Second)}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

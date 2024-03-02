@@ -43,6 +43,7 @@ type CustomDeploymentSpec struct {
 type CustomDeploymentStatus struct {
         // INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
         // Important: Run "make" to regenerate code after modifying this file
+        IsFirstTime bool `json:"isFirstTime"`
 }
 
 //+kubebuilder:object:root=true
