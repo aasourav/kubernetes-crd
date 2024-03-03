@@ -68,7 +68,12 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err == nil {
 		log.Info(fmt.Sprintf("\nx HHHHHHHHHHH -====- %v -====- HHHHHHHHHHH\n", err))
 		deployment.Spec.Replicas = &appCr.Spec.Replicas
-		r.Update(ctx, deployment)
+		er := r.Update(ctx, deployment)
+		if er != nil {
+			log.Error(er, "Error duing update")
+			return ctrl.Result{}, nil
+		}
+		log.Info("====== Update success ===========\n")
 		return ctrl.Result{}, nil
 	}
 

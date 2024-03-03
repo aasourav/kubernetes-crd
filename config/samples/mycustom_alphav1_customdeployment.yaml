@@ -11,7 +11,7 @@ metadata:
 spec:
   image: "nginx"
   port: 80
-  replicas: 1
+  replicas: 4
   pickEnd: 23
   pickEndMins: 25
   pickStart: 19
