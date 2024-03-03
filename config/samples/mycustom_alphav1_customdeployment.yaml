@@ -12,4 +12,9 @@ spec:
   image: "nginx"
   port: 80
   replicas: 3
+  pickEnd: 23
+  pickEndMins: 32
+  pickStart: 19
+  pickStartMins: 32
+
   # TODO(user): Add fields here
