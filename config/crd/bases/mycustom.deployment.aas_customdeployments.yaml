@@ -44,7 +44,13 @@ spec:
               pickEnd:
                 format: int32
                 type: integer
+              pickEndMins:
+                format: int32
+                type: integer
               pickStart:
+                format: int32
+                type: integer
+              pickStartMins:
                 format: int32
                 type: integer
               port:
@@ -59,12 +65,22 @@ spec:
             required:
             - image
             - pickEnd
+            - pickEndMins
             - pickStart
+            - pickStartMins
             - port
             - replicas
             type: object
           status:
             description: CustomDeploymentStatus defines the observed state of CustomDeployment
+            properties:
+              isFirstTime:
+                description: |-
+                  INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+                  Important: Run "make" to regenerate code after modifying this file
+                type: boolean
+            required:
+            - isFirstTime
             type: object
         type: object
     served: true

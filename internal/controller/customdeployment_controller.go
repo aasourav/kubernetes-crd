@@ -36,8 +36,8 @@ import (
 
 // CustomDeploymentReconciler reconciles a CustomDeployment object
 type CustomDeploymentReconciler struct {
-        client.Client
-        Scheme *runtime.Scheme
+	client.Client
+	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=mycustom.deployment.aas,resources=customdeployments,verbs=get;list;watch;create;update;patch;delete
@@ -54,104 +54,78 @@ type CustomDeploymentReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.0/pkg/reconcile
 func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-        log := log.FromContext(ctx)
-        appCr := &mycustomalphav1.CustomDeployment{}
+	log := log.FromContext(ctx)
+	appCr := &mycustomalphav1.CustomDeployment{}
 
-        err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, appCr)
-        if err != nil {
-                log.Info(fmt.Sprintf("faied to get %s/%s", appCr.Name, appCr.Namespace))
-                return ctrl.Result{}, err
-        }
+	err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, appCr)
+	if err != nil {
+		log.Info(fmt.Sprintf("\nx HHHHHHHHHHH -====- %v -====- HHHHHHHHHHH\n", err))
+		return ctrl.Result{}, err
+	}
 
-        var replicas int32
-        currentTime := time.Now()
-        currentHour := currentTime.Hour() + 5
-        currentMin := currentTime.Minute()
+	deployment := &appsv1.Deployment{}
+	err = r.Get(ctx, types.NamespacedName{Name: appCr.Name, Namespace: appCr.Namespace}, deployment)
+	if err == nil {
+		log.Info(fmt.Sprintf("\nx HHHHHHHHHHH -====- %v -====- HHHHHHHHHHH\n", err))
+		deployment.Spec.Replicas = &appCr.Spec.Replicas
+		r.Update(ctx, deployment)
+		return ctrl.Result{}, nil
+	}
 
-        log.Info(fmt.Sprintf("\nP!! %v \n %v \n %v", appCr.Spec.PickHourStart, appCr.Spec.PickHourEnd, appCr.Spec.PickMinsEnd))
-        log.Info(fmt.Sprintf("\nP22 %v \n %v \n %v\n", currentHour, currentMin,appCr.Status.IsFirstTime))
-        log.Info(fmt.Sprintf("\n======================== \nHERE WE GO\n====================\n %v",currentHour))
+	podLabel := map[string]string{
+		"tata": "mata",
+	}
 
-        if currentHour >= int(appCr.Spec.PickHourStart) && currentMin >= int(appCr.Spec.PickMinsEnd) && currentHour <= int(appCr.Spec.PickHourEnd) {
-                replicas = 10
-        } else {
-                replicas = 2
-        }
+	deployment = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      appCr.Name,
+			Namespace: appCr.Namespace,
+			//Labels:    podLabel,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &appCr.Spec.Replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: podLabel,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					// Name:      appCr.Name,
+					// Namespace: appCr.Namespace,
+					Labels: podLabel,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "my-nginx",
+							Image: appCr.Spec.Image,
 
-        podLabel := map[string]string{
-                "tata": "mata",
-        }
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "http",
+									Protocol:      corev1.ProtocolTCP,
+									ContainerPort: appCr.Spec.Port,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
-        deployment := &appsv1.Deployment{
-                ObjectMeta: metav1.ObjectMeta{
-                        Name:      appCr.Name,
-                        Namespace: appCr.Namespace,
-                        //Labels:    podLabel,
-                },
-                Spec: appsv1.DeploymentSpec{
-                        Replicas: &replicas,
-                        Selector: &metav1.LabelSelector{
-                                MatchLabels: podLabel,
-                        },
-                        Template: corev1.PodTemplateSpec{
-                                ObjectMeta: metav1.ObjectMeta{
-                                        // Name:      appCr.Name,
-                                        // Namespace: appCr.Namespace,
-                                        Labels: podLabel,
-                                },
-                                Spec: corev1.PodSpec{
-                                        Containers: []corev1.Container{
-                                                {
-                                                        Name:  "my-nginx",
-                                                        Image: appCr.Spec.Image,
+	err = r.Create(ctx, deployment)
+	if err != nil {
+		log.Error(err, "Failed to create Deployment :(")
+	}
 
-                                                        Ports: []corev1.ContainerPort{
-                                                                {
-                                                                        Name:          "http",
-                                                                        Protocol:      corev1.ProtocolTCP,
-                                                                        ContainerPort: appCr.Spec.Port,
-                                                                },
-                                                        },
-                                                },
-                                        },
-                                },
-                        },
-                },
-        }
+	// TODO(user): your logic here
 
-
-        if appCr.Status.IsFirstTime {
-        // If it's not the first time, update the existing Deployment
-        err = r.Update(ctx, deployment)
-        if err != nil {
-            log.Error(err, "Failed to update Deployment")
-            return ctrl.Result{}, err
-        }
-    } else {
-        // If it's the first time, create the Deployment
-        err = r.Create(ctx, deployment)
-        if err != nil {
-            log.Error(err, "Failed to create Deployment")
-            return ctrl.Result{}, err
-        }
-        // Update status to mark it's not the first time
-        appCr.Status.IsFirstTime = true
-        err = r.Status().Update(ctx, appCr)
-        if err != nil {
-            log.Error(err, "Failed to update CustomDeployment status")
-            return ctrl.Result{}, err
-        }
-    }
-
-        // TODO(user): your logic here
-
-        return ctrl.Result{RequeueAfter: time.Duration(30 * time.Second)}, nil
+	return ctrl.Result{RequeueAfter: time.Duration(5 * time.Second)}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *CustomDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
-        return ctrl.NewControllerManagedBy(mgr).
-                For(&mycustomalphav1.CustomDeployment{}).
-                Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&mycustomalphav1.CustomDeployment{}).
+		Complete(r)
 }
-                      
