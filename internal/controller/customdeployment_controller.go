@@ -81,6 +81,10 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		"tata": "mata",
 	}
 
+	// metav1.TypeMeta{
+	// 	Kind:       "adsfb",
+	// 	APIVersion: "v1",
+	// }
 	deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      appCr.Name,
