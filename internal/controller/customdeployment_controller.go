@@ -41,6 +41,58 @@ type CustomDeploymentReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// config mmap function
+func (r *CustomDeploymentReconciler) CreateOrUpdateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) error {
+	existingConfigMap := &corev1.ConfigMap{}
+	err := r.Get(ctx, client.ObjectKey{Name: configMap.Name, Namespace: configMap.Namespace}, existingConfigMap)
+	if err != nil {
+		// ConfigMap doesn't exist, create it
+		if err := r.Create(ctx, configMap); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	existingConfigMap.Data = configMap.Data
+
+	if err := r.Update(ctx, existingConfigMap); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *CustomDeploymentReconciler) CreateOrUpdateSecret(ctx context.Context, secret *corev1.Secret) error {
+	existSecret := &corev1.Secret{}
+
+	err := r.Get(ctx, client.ObjectKey{Name: secret.Name, Namespace: secret.Namespace}, existSecret)
+
+	if err != nil {
+		if err := r.Create(ctx, secret); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	existSecret.Data = secret.Data
+	if err := r.Update(ctx, secret); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *CustomDeploymentReconciler) GetSecret(ctx context.Context, name string, nameSpace string) (*corev1.Secret, error) {
+	getSecret := &corev1.Secret{}
+
+	err := r.Get(ctx, client.ObjectKey{Name: name, Namespace: nameSpace}, getSecret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return getSecret, nil
+
+}
+
 //+kubebuilder:rbac:groups=mycustom.deployment.aas,resources=customdeployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=mycustom.deployment.aas,resources=customdeployments/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=mycustom.deployment.aas,resources=customdeployments/finalizers,verbs=update
@@ -82,37 +134,75 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		"app": customResource.Spec.Selector,
 	}
 
+	// configMap := corev1.ConfigMap{
+	// 	ObjectMeta: metav1.ObjectMeta{
+	// 		Name:      "Config name",
+	// 		Namespace: "Default",
+	// 		Labels:    podLabel,
+	// 	},
+	// 	Data: map[string]string{
+	// 		"PORT":     "3000",
+	// 		"BASE_API": "https://abc.com",
+	// 	},
+	// }
+
+	// secret := corev1.Secret{
+	// 	ObjectMeta: metav1.ObjectMeta{
+	// 		Name:      "Secret name",
+	// 		Namespace: "my namespace",
+	// 		Labels:    podLabel,
+	// 	},
+	// }
+
+	// r.CreateOrUpdateConfigMap(ctx, &configMap)
+	// r.CreateOrUpdateSecret(ctx, &secret)
+
+	getSecret, err := r.GetSecret(ctx, "my-secret", "secret-vault")
+
+	if err != nil {
+		log.Info("Something went wrong")
+	}
+
+	log.Info(fmt.Sprintf("\nHERE IS YOUR SECRET: %v  %v\n ", string(getSecret.Data["username"]), string(getSecret.Data["password"])))
+
 	// metav1.TypeMeta{
 	// 	Kind:       "adsfb",
 	// 	APIVersion: "v1",
 	// }
 
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      customResource.Name,
-			Namespace: customResource.Namespace,
-			Labels:    podLabel,
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"app": customResource.Spec.Selector,
-			},
-			Ports: []corev1.ServicePort{
-				{
-					Name:       "http",
-					Protocol:   corev1.ProtocolTCP,
-					Port:       customResource.Spec.ContainerPort,
-					TargetPort: intstr.FromInt(customResource.Spec.TargetPort),
-				},
-			},
-			Type: corev1.ServiceTypeNodePort,
-		},
-		// Spec: appsv1,
-	}
+	service := &corev1.Service{}
 
-	if err := r.Create(ctx, service); err != nil {
-		log.Error(err, "FAILED TO CREATE SERVICE")
-		return ctrl.Result{}, err
+	err = r.Get(ctx, types.NamespacedName{Name: customResource.Name, Namespace: customResource.Namespace}, service)
+
+	if err != nil {
+		log.Info("================= I am here =j=============")
+		service = &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      customResource.Name,
+				Namespace: customResource.Namespace,
+				Labels:    podLabel,
+			},
+			Spec: corev1.ServiceSpec{
+				Selector: map[string]string{
+					"app": customResource.Spec.Selector,
+				},
+				Ports: []corev1.ServicePort{
+					{
+						Name:       "http",
+						Protocol:   corev1.ProtocolTCP,
+						Port:       customResource.Spec.ContainerPort,
+						TargetPort: intstr.FromInt(customResource.Spec.TargetPort),
+					},
+				},
+				Type: corev1.ServiceTypeNodePort,
+			},
+			// Spec: appsv1,
+		}
+
+		if err := r.Create(ctx, service); err != nil {
+			log.Error(err, "FAILED TO CREATE SERVICE")
+			return ctrl.Result{}, err
+		}
 	}
 
 	deployment = &appsv1.Deployment{
