@@ -56,19 +56,19 @@ type CustomDeploymentReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.0/pkg/reconcile
 func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	appCr := &mycustomalphav1.CustomDeployment{}
+	customResource := &mycustomalphav1.CustomDeployment{}
 
-	err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, appCr)
+	err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, customResource)
 	if err != nil {
 		log.Info(fmt.Sprintf("\nx HHHHHHHHHHH -====- %v -====- HHHHHHHHHHH\n", err))
 		return ctrl.Result{}, err
 	}
 
 	deployment := &appsv1.Deployment{}
-	err = r.Get(ctx, types.NamespacedName{Name: appCr.Name, Namespace: appCr.Namespace}, deployment)
+	err = r.Get(ctx, types.NamespacedName{Name: customResource.Name, Namespace: customResource.Namespace}, deployment)
 	if err == nil {
 		log.Info(fmt.Sprintf("\nx HHHHHHHHHHH -====- %v -====- HHHHHHHHHHH\n", err))
-		deployment.Spec.Replicas = &appCr.Spec.Replicas
+		deployment.Spec.Replicas = &customResource.Spec.Replicas
 		er := r.Update(ctx, deployment)
 		if er != nil {
 			log.Error(er, "Error duing update")
@@ -79,7 +79,7 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	podLabel := map[string]string{
-		"app": appCr.Spec.Selector,
+		"app": customResource.Spec.Selector,
 	}
 
 	// metav1.TypeMeta{
@@ -89,20 +89,20 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      appCr.Name,
-			Namespace: appCr.Namespace,
+			Name:      customResource.Name,
+			Namespace: customResource.Namespace,
 			Labels:    podLabel,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				"app": appCr.Spec.Selector,
+				"app": customResource.Spec.Selector,
 			},
 			Ports: []corev1.ServicePort{
 				{
 					Name:       "http",
 					Protocol:   corev1.ProtocolTCP,
-					Port:       appCr.Spec.ContainerPort,
-					TargetPort: intstr.FromInt(appCr.Spec.TargetPort),
+					Port:       customResource.Spec.ContainerPort,
+					TargetPort: intstr.FromInt(customResource.Spec.TargetPort),
 				},
 			},
 			Type: corev1.ServiceTypeNodePort,
@@ -117,32 +117,32 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      appCr.Name,
-			Namespace: appCr.Namespace,
+			Name:      customResource.Name,
+			Namespace: customResource.Namespace,
 			Labels:    podLabel,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &appCr.Spec.Replicas,
+			Replicas: &customResource.Spec.Replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: podLabel,
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					// Name:      appCr.Name,
-					// Namespace: appCr.Namespace,
+					// Name:      customResource.Name,
+					// Namespace: customResource.Namespace,
 					Labels: podLabel,
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
 							Name:  "my-nginx",
-							Image: appCr.Spec.Image,
+							Image: customResource.Spec.Image,
 
 							Ports: []corev1.ContainerPort{
 								{
 									Name:          "http",
 									Protocol:      corev1.ProtocolTCP,
-									ContainerPort: appCr.Spec.ContainerPort,
+									ContainerPort: customResource.Spec.ContainerPort,
 								},
 							},
 						},
