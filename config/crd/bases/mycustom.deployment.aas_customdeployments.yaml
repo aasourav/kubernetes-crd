@@ -41,18 +41,6 @@ spec:
             properties:
               image:
                 type: string
-              pickEnd:
-                format: int32
-                type: integer
-              pickEndMins:
-                format: int32
-                type: integer
-              pickStart:
-                format: int32
-                type: integer
-              pickStartMins:
-                format: int32
-                type: integer
               port:
                 format: int32
                 type: integer
@@ -62,14 +50,16 @@ spec:
                   Foo string `json:"foo,omitempty"`
                 format: int32
                 type: integer
+              selector:
+                type: string
+              targetPort:
+                type: integer
             required:
             - image
-            - pickEnd
-            - pickEndMins
-            - pickStart
-            - pickStartMins
             - port
             - replicas
+            - selector
+            - targetPort
             type: object
           status:
             description: CustomDeploymentStatus defines the observed state of CustomDeployment

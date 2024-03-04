@@ -31,12 +31,10 @@ type CustomDeploymentSpec struct {
 	// Foo is an example field of CustomDeployment. Edit customdeployment_types.go to remove/update
 	// Foo string `json:"foo,omitempty"`
 	Replicas      int32  `json:"replicas"`
-	Port          int32  `json:"port"`
+	ContainerPort int32  `json:"containerPort"`
+	TargetPort    int    `json:"targetPort"`
 	Image         string `json:"image"`
-	PickHourStart int32  `json:"pickStart"`
-	PickHourEnd   int32  `json:"pickEnd"`
-	PickMinsStart int32  `json:"pickStartMins"`
-	PickMinsEnd   int32  `json:"pickEndMins"`
+	Selector      string `json:"selector"`
 }
 
 // CustomDeploymentStatus defines the observed state of CustomDeployment
