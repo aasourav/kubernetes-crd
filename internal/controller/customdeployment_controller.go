@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -78,18 +79,47 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	podLabel := map[string]string{
-		"tata": "mata",
+		"app": appCr.Spec.Selector,
 	}
 
 	// metav1.TypeMeta{
 	// 	Kind:       "adsfb",
 	// 	APIVersion: "v1",
 	// }
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      appCr.Name,
+			Namespace: appCr.Namespace,
+			Labels:    podLabel,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"app": appCr.Spec.Selector,
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "http",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       appCr.Spec.ContainerPort,
+					TargetPort: intstr.FromInt(appCr.Spec.TargetPort),
+				},
+			},
+			Type: corev1.ServiceTypeNodePort,
+		},
+		// Spec: appsv1,
+	}
+
+	if err := r.Create(ctx, service); err != nil {
+		log.Error(err, "FAILED TO CREATE SERVICE")
+		return ctrl.Result{}, err
+	}
+
 	deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      appCr.Name,
 			Namespace: appCr.Namespace,
-			//Labels:    podLabel,
+			Labels:    podLabel,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &appCr.Spec.Replicas,
@@ -112,7 +142,7 @@ func (r *CustomDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 								{
 									Name:          "http",
 									Protocol:      corev1.ProtocolTCP,
-									ContainerPort: appCr.Spec.Port,
+									ContainerPort: appCr.Spec.ContainerPort,
 								},
 							},
 						},

@@ -10,11 +10,9 @@ metadata:
   name: agagagahjhhj
 spec:
   image: "nginx"
-  port: 80
+  containerPort: 80
   replicas: 4
-  pickEnd: 23
-  pickEndMins: 25
-  pickStart: 19
-  pickStartMins: 25
+  targetPort: 80
+  selector: myNginx
 
   # TODO(user): Add fields here
