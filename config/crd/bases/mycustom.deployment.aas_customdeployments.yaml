@@ -39,11 +39,11 @@ spec:
           spec:
             description: CustomDeploymentSpec defines the desired state of CustomDeployment
             properties:
-              image:
-                type: string
-              port:
+              containerPort:
                 format: int32
                 type: integer
+              image:
+                type: string
               replicas:
                 description: |-
                   Foo is an example field of CustomDeployment. Edit customdeployment_types.go to remove/update
@@ -55,8 +55,8 @@ spec:
               targetPort:
                 type: integer
             required:
+            - containerPort
             - image
-            - port
             - replicas
             - selector
             - targetPort
